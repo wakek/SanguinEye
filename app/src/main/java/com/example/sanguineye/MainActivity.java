@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -22,8 +23,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         ArrayList<String> quotes = new ArrayList<>();
-        quotes.add("\"The opportunity to step away from everything and take a break is something that shouldn\'t be squandered\" ― Harper Reed");
+        quotes.add("\"The opportunity to step away from everything and take a break is something that shouldn\'t be squandered.\" ― Harper Reed");
         quotes.add("\"Do something nice for yourself today. Find some quiet, sit in stillness, breathe. Put your problems on pause. You deserve a break.\" ― Akiroq Brost");
+        quotes.add("\"When things are not happening as planned just stop worrying and take an unplanned break to regain yourself.\"― Giridhar Alwar");
 
         int rand_int = new Random().nextInt(quotes.size());
         TextView quote_textview = (TextView)findViewById(R.id.quote);
@@ -33,15 +35,18 @@ public class MainActivity extends AppCompatActivity {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                Intent intent = new Intent(MainActivity.this, Main2Activity.class);
+                Intent timed_intent = new Intent(MainActivity.this, Main2Activity.class);
+                startActivity(timed_intent);
             }
         }, 5000);
     }
 
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_UP){
-            Intent intent = new Intent(MainActivity.this, Main2Activity.class);
+            Intent touch_intent = new Intent(MainActivity.this, Main2Activity.class);
+            startActivity(touch_intent);
             return true;
         }
         return false;
