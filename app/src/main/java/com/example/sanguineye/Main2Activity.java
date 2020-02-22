@@ -1,9 +1,14 @@
 package com.example.sanguineye;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
@@ -17,6 +22,7 @@ import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ScaleDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.Layout;
@@ -29,11 +35,6 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
-import com.github.silvestrpredko.dotprogressbar.DotProgressBar;
-import com.github.silvestrpredko.dotprogressbar.DotProgressBarBuilder;
-
-import org.w3c.dom.Text;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -50,6 +51,8 @@ public class Main2Activity extends AppCompatActivity {
     public final static String GOOGLE_URL = "https://play.google.com/store/apps/details?id=";
     public static final String ERROR = "error";
     private static final String TAG = "MainActivity2 Log: ";
+    private static final String CHANNEL_ID = "usage_notification";
+    private static final int NOTIFICATION_ID = 001;
     ListView appListView;
     Intent intent;
 
@@ -62,6 +65,7 @@ public class Main2Activity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
+        createNotificationChannel();
 
         boolean granted = false;
         AppOpsManager appOps = (AppOpsManager) this
@@ -88,13 +92,6 @@ public class Main2Activity extends AppCompatActivity {
             String formattedDate = dateFormat.format(date);
 
             System.out.println("Retrieving: " + installedApps.get(i).appName + ", " + installedApps.get(i).appPkg);
-
-            // For testing purposes:
-//            databaseHelper.addAppUsage(new AppUsageRecord("Amazon Shopping", "4", formattedDate));
-//            AppUsageRecord appUsageRecord = databaseHelper.getAppUsageRecordByAppNameandDate("Amazon Shopping", formattedDate);
-//            System.out.println("App name" + appUsageRecord.getAppName() + " | Time spent: " + appUsageRecord.getTimeSpent());
-//            List<AppUsageRecord> appUsageRecords = databaseHelper.getAppUsageRecordsByAppName(apps.get(i).appName);
-//            System.out.println(appUsageRecords.toString());
 
             // Individual linear layout for apps
             LinearLayout newAppLinearLayout = new LinearLayout(this);
@@ -142,12 +139,16 @@ public class Main2Activity extends AppCompatActivity {
             } else {
                 appActivityRunningTime_Str = Long.toString(appActivityRunningTime);
             }
-            databaseHelper.addAppUsageLimit(new AppUsageLimit(installedApps.get(i).appName, "3600000"));
-            AppUsageLimit appUsageLimit = databaseHelper.getAppUsageLimitByAppName(installedApps.get(i).appName);
 
+            AppUsageLimit appUsageLimit = databaseHelper.getAppUsageLimitByAppName(installedApps.get(i).appName);
+            if (appUsageLimit == null){
+                databaseHelper.addAppUsageLimit(new AppUsageLimit(installedApps.get(i).appName, "3600000"));
+            }
+
+            Float appUsageLimitPercentage = null;
             if (appUsageRecord != null) {    // If previous record exists in DB, update
 
-                Float appUsageLimitPercentage = Float.parseFloat(appActivityRunningTime_Str)/Float.parseFloat(appUsageLimit.getTimeLimit()) * 100;
+                appUsageLimitPercentage = Float.parseFloat(appActivityRunningTime_Str)/Float.parseFloat(appUsageLimit.getTimeLimit()) * 100;
 
                 // Set progress text to new-found uptime
                 progressTextView.setText(String.format(Locale.getDefault(), "%.2f", appUsageLimitPercentage));
@@ -157,7 +158,7 @@ public class Main2Activity extends AppCompatActivity {
                 databaseHelper.updateAppUsageRecord(appUsageRecord);
             } else {
 
-                Float appUsageLimitPercentage = Float.parseFloat(appActivityRunningTime_Str)/Float.parseFloat(appUsageLimit.getTimeLimit()) * 100;
+                appUsageLimitPercentage = Float.parseFloat(appActivityRunningTime_Str)/Float.parseFloat(appUsageLimit.getTimeLimit()) * 100;
 
                 // Set progress text to new-found uptime
                 progressTextView.setText(String.format(Locale.getDefault(), "%.2f", appUsageLimitPercentage));
@@ -166,17 +167,71 @@ public class Main2Activity extends AppCompatActivity {
                 databaseHelper.addAppUsage(new AppUsageRecord(installedApps.get(i).appName, appActivityRunningTime_Str, formattedDate));
             }
             pbLayout.addView(progressTextView);
+            displayUsageNotifications(installedApps.get(i).appName, appUsageLimitPercentage);
 
             // Adding app icon and app name
             newAppLinearLayout.addView(newAppIcon);
             newAppLinearLayout.addView(newAppTextView);
             newAppLinearLayout.addView(pbLayout);
+            newAppLinearLayout.setClickable(true);
+            final int appIndex = i;
+            newAppLinearLayout.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    goToSetLimitActivity(installedApps.get(appIndex).appName);
+                }
+            });
 
             LinearLayout.LayoutParams appslayoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 200);
             appslayoutParams.setMargins(24, 40, 24, 0);
             appsLinearLayout.addView(newAppLinearLayout, appslayoutParams);
         }
 
+    }
+
+    public void goToSetLimitActivity(String appName){
+        Intent intent = new Intent(getBaseContext(), Main3Activity.class);
+        intent.putExtra("APP_NAME", appName);
+        startActivity(intent);
+    }
+
+    public void displayUsageNotifications(String appName, Float usagePercentage){
+        if (usagePercentage < 100){
+            return;
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_priority_notification)
+                .setContentTitle(String.format(Locale.getDefault(), "%s: Usage limit hit", appName))
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        if (usagePercentage >= 100 && usagePercentage <= 110){
+            builder.setContentText("App usage limit exceeded. Let's take a break.");
+        }
+        else if (usagePercentage > 110) {
+            builder.setContentText("App usage limit exceeded. Geez, take a break, sheesh.");
+        }
+
+        NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
+        notificationManagerCompat.notify(NOTIFICATION_ID, builder.build());
+
+        System.out.println("notification");
+    }
+
+    private void createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is new and not in the support library
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = "Usage";
+            String description = "A channel of freedom";
+            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
     }
 
     @Override
@@ -238,6 +293,8 @@ public class Main2Activity extends AppCompatActivity {
                     try {
                         appUsageRecord.setTimeSpent(appActivityRunningTime_Str);
                         databaseHelper.updateAppUsageRecord(appUsageRecord);
+                        createNotificationChannel();
+                        displayUsageNotifications(installedApps.get(j).appName, appUsageLimitPercentage);
                     }
                     catch (Exception e){
                         e.printStackTrace();
