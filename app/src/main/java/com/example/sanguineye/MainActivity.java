@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -22,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ArrayList<String> quotes = new ArrayList<>();
+        List<String> quotes = new ArrayList<>();
         quotes.add("\"The opportunity to step away from everything and take a break is something that shouldn\'t be squandered.\" ― Harper Reed");
         quotes.add("\"Do something nice for yourself today. Find some quiet, sit in stillness, breathe. Put your problems on pause. You deserve a break.\" ― Akiroq Brost");
         quotes.add("\"When things are not happening as planned just stop worrying and take an unplanned break to regain yourself.\"― Giridhar Alwar");
@@ -36,7 +37,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void run() {
                 Intent timed_intent = new Intent(MainActivity.this, Main2Activity.class);
-                startActivity(timed_intent);
+                try {
+                    startActivity(timed_intent);
+                } catch (Exception e){
+                    e.printStackTrace();
+                }
             }
         }, 5000);
     }
