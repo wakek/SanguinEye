@@ -102,7 +102,7 @@ public class Main2Activity extends AppCompatActivity {
             newAppLinearLayout.setOrientation(LinearLayout.HORIZONTAL);
             newAppLinearLayout.setBackgroundResource(R.drawable.layout_bg);
 
-            // App icon
+            // Display App icon
             ImageView newAppIcon = new ImageView(this);
             Drawable appIconDrawable = new ScaleDrawable(installedApps.get(i).appIcon, 0, 50, 50).getDrawable();
             appIconDrawable.setBounds(0, 0, 50, 50);
@@ -141,37 +141,29 @@ public class Main2Activity extends AppCompatActivity {
                 appActivityRunningTime_Str = "0";
             } else {
                 appActivityRunningTime_Str = Long.toString(appActivityRunningTime);
-
-//                if (Long.parseLong(appActivityRunningTime_Str) >= 1) {
-//                    appActivityRunningTime_Str += " hrs";
-//                    progressTextView.setText(appActivityRunningTime_Str);
-//                }
-//                else if (Long.parseLong(appActivityRunningTime_Str) * 60 < 1) {
-//                    appActivityRunningTime_Str = Long.toString(Long.parseLong(appActivityRunningTime_Str) * 60 * 60) + " secs";
-//                    progressTextView.setText(appActivityRunningTime_Str);
-//                }
-//                else if (Long.parseLong(appActivityRunningTime_Str) < 1) {
-//                    appActivityRunningTime_Str = Long.toString(Long.parseLong(appActivityRunningTime_Str) * 60) + " mins";
-//                    progressTextView.setText(appActivityRunningTime_Str);
-//                }
             }
+            databaseHelper.addAppUsageLimit(new AppUsageLimit(installedApps.get(i).appName, "3600000"));
+            AppUsageLimit appUsageLimit = databaseHelper.getAppUsageLimitByAppName(installedApps.get(i).appName);
 
             if (appUsageRecord != null) {    // If previous record exists in DB, update
 
-                // Update progress text with the new uptime
-                progressTextView.setText(appActivityRunningTime_Str);
+                Float appUsageLimitPercentage = Float.parseFloat(appActivityRunningTime_Str)/Float.parseFloat(appUsageLimit.getTimeLimit()) * 100;
+
+                // Set progress text to new-found uptime
+                progressTextView.setText(String.format(Locale.getDefault(), "%.2f", appUsageLimitPercentage));
 
                 // Update records in database
                 appUsageRecord.setTimeSpent(appActivityRunningTime_Str);
                 databaseHelper.updateAppUsageRecord(appUsageRecord);
             } else {
 
+                Float appUsageLimitPercentage = Float.parseFloat(appActivityRunningTime_Str)/Float.parseFloat(appUsageLimit.getTimeLimit()) * 100;
+
                 // Set progress text to new-found uptime
-                progressTextView.setText(appActivityRunningTime_Str);
+                progressTextView.setText(String.format(Locale.getDefault(), "%.2f", appUsageLimitPercentage));
 
                 // Add record to database
                 databaseHelper.addAppUsage(new AppUsageRecord(installedApps.get(i).appName, appActivityRunningTime_Str, formattedDate));
-
             }
             pbLayout.addView(progressTextView);
 
@@ -238,20 +230,9 @@ public class Main2Activity extends AppCompatActivity {
                     // Get appUsageRecord for current app
                     AppUsageRecord appUsageRecord = databaseHelper.getAppUsageRecordByAppNameandDate(installedApps.get(j).appName, formattedDate);
 
-                    // Update progress text with the new uptime
-//                    if (Long.parseLong(appActivityRunningTime_Str) >= 1) {
-//                        appActivityRunningTime_Str += " hrs";
-//                        progressTextView.setText(appActivityRunningTime_Str);
-//                    }
-//                    else if (Long.parseLong(appActivityRunningTime_Str) * 60 < 1) {
-//                        appActivityRunningTime_Str += Long.toString(Long.parseLong(appActivityRunningTime_Str) * 60 * 60) + " secs";
-//                        progressTextView.setText(appActivityRunningTime_Str);
-//                    }
-//                    else if (Long.parseLong(appActivityRunningTime_Str) < 1) {
-//                        appActivityRunningTime_Str += Long.toString(Long.parseLong(appActivityRunningTime_Str) * 60) + " mins";
-//                        progressTextView.setText(appActivityRunningTime_Str);
-//                    }
+                    AppUsageLimit appUsageLimit = databaseHelper.getAppUsageLimitByAppName(installedApps.get(i).appName);
 
+                    Float appUsageLimitPercentage = Float.parseFloat(appActivityRunningTime_Str)/Float.parseFloat(appUsageLimit.getTimeLimit()) * 100;
 
                     // Update records in database
                     try {
@@ -261,6 +242,8 @@ public class Main2Activity extends AppCompatActivity {
                     catch (Exception e){
                         e.printStackTrace();
                     }
+
+                    progressTextView.setText(String.format(Locale.getDefault(), "%.2f", appUsageLimitPercentage) + "%");
                 }
             }
         }

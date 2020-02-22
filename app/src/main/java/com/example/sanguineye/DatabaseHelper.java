@@ -58,23 +58,73 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public void addAppUsageLimit(AppUsageRecord appUsageRecord){
+    public void addAppUsageLimit(AppUsageLimit appUsageLimit){
         SQLiteDatabase db = this.getWritableDatabase();
         db.beginTransaction();
 
-        try {
-            ContentValues values = new ContentValues();
-            values.put(KEY_APPNAME, appUsageRecord.getAppName());
-            values.put(KEY_TIMESPENT, appUsageRecord.getTimeSpent());
-            values.put(KEY_DATE, appUsageRecord.getDate());
+        ContentValues values = new ContentValues();
+        values.put(KEY_APPNAME, appUsageLimit.getAppName());
+        values.put(KEY_TIMELIMIT, appUsageLimit.getTimeLimit());
 
-            db.insertOrThrow(TABLE_APPUSAGE, null, values);
-            db.setTransactionSuccessful();
-        } catch (Exception e) {
-            Log.d(TAG, "Error while trying to add record to database");
+        long appUsageLimitId = -1;
+
+        try {
+            // First try to update the usage limit in case it already exists in the database
+            int rows = db.update(TABLE_APPUSAGELIMITS, values, KEY_APPNAME + "= ?", new String[]{appUsageLimit.getAppName()});
+
+            // Check if update succeeded
+            if (rows == 1) {
+                // Get the primary key of the appUsageLimit just updated
+                String usersSelectQuery = String.format("SELECT %s FROM %s WHERE %s = ?",
+                        KEY_APPUSAGELIMITS_ID, TABLE_APPUSAGELIMITS, KEY_APPNAME);
+                Cursor cursor = db.rawQuery(usersSelectQuery, new String[]{String.valueOf(appUsageLimit.getAppName())});
+                try {
+                    if (cursor.moveToFirst()) {
+                        appUsageLimitId = cursor.getInt(0);
+                        db.setTransactionSuccessful();
+                    }
+                } finally {
+                    if (cursor != null && !cursor.isClosed()) {
+                        cursor.close();
+                    }
+                }
+            } else {
+                db.insertOrThrow(TABLE_APPUSAGELIMITS, null, values);
+                db.setTransactionSuccessful();
+            }
+        }
+        catch (Exception e) {
+            Log.d(TAG, "Error while trying to add usage limit record to database");
         } finally {
             db.endTransaction();
         }
+    }
+
+    public AppUsageLimit getAppUsageLimitByAppName(String appName){
+        String selectQuery = "SELECT * FROM " + TABLE_APPUSAGELIMITS + " WHERE " + KEY_APPNAME + "= \"" + appName + "\"";
+
+        SQLiteDatabase db = this.getWritableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+
+        AppUsageLimit appUsageLimit = null;
+        try {
+            if (cursor.moveToFirst()) {
+                do {
+                    appUsageLimit = new AppUsageLimit();
+                    appUsageLimit.setId(Integer.parseInt(cursor.getString(0)));
+                    appUsageLimit.setAppName(cursor.getString(1));
+                    appUsageLimit.setTimeLimit(cursor.getString(2));
+
+                } while (cursor.moveToNext());
+            }
+        } catch (Exception e) {
+            Log.d(TAG, "Error while trying to get usage limits by appName from database");
+        } finally {
+            if (cursor != null && !cursor.isClosed()) {
+                cursor.close();
+            }
+        }
+        return appUsageLimit;
     }
 
 

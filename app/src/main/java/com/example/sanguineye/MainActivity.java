@@ -46,6 +46,11 @@ public class MainActivity extends AppCompatActivity {
         }, 5000);
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+    }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
