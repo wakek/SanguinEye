@@ -38,14 +38,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 "(" +
                     KEY_APPUSAGE_ID + " INTEGER PRIMARY KEY," +
                     KEY_APPNAME + " TEXT," +
-                    KEY_TIMESPENT + " FLOAT," +
+                    KEY_TIMESPENT + " TEXT," +
                     KEY_DATE + " DATE" +
                 ")";
         String CREATE_APPUSAGE_LIMIT_TABLE = "CREATE TABLE " + TABLE_APPUSAGELIMITS +
                 "(" +
                     KEY_APPUSAGELIMITS_ID + " INTEGER PRIMARY KEY," +
                     KEY_APPNAME + " TEXT," +
-                    KEY_TIMELIMIT + " FLOAT" +
+                    KEY_TIMELIMIT + " TEXT" +
                 ")";
         db.execSQL(CREATE_APPUSAGE_TABLE);
         db.execSQL(CREATE_APPUSAGE_LIMIT_TABLE);
@@ -58,6 +58,25 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
+    public void addAppUsageLimit(AppUsageRecord appUsageRecord){
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.beginTransaction();
+
+        try {
+            ContentValues values = new ContentValues();
+            values.put(KEY_APPNAME, appUsageRecord.getAppName());
+            values.put(KEY_TIMESPENT, appUsageRecord.getTimeSpent());
+            values.put(KEY_DATE, appUsageRecord.getDate());
+
+            db.insertOrThrow(TABLE_APPUSAGE, null, values);
+            db.setTransactionSuccessful();
+        } catch (Exception e) {
+            Log.d(TAG, "Error while trying to add record to database");
+        } finally {
+            db.endTransaction();
+        }
+    }
+
 
     public void addAppUsage(AppUsageRecord appUsageRecord){
         SQLiteDatabase db = this.getWritableDatabase();
@@ -66,7 +85,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         try {
             ContentValues values = new ContentValues();
             values.put(KEY_APPNAME, appUsageRecord.getAppName());
-            values.put(KEY_TIMESPENT, Float.parseFloat(appUsageRecord.getTimeSpent()));
+            values.put(KEY_TIMESPENT, appUsageRecord.getTimeSpent());
             values.put(KEY_DATE, appUsageRecord.getDate());
 
             db.insertOrThrow(TABLE_APPUSAGE, null, values);
@@ -203,7 +222,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
         ContentValues contentValues = new ContentValues();
         contentValues.put(KEY_APPNAME, appUsageRecord.getAppName());
-        contentValues.put(KEY_TIMESPENT, Float.parseFloat(appUsageRecord.getTimeSpent()));
+        contentValues.put(KEY_TIMESPENT, appUsageRecord.getTimeSpent());
         contentValues.put(KEY_DATE, appUsageRecord.getAppName());
         return db.update(TABLE_APPUSAGE, contentValues,
                 KEY_APPUSAGE_ID + "=?", new String[]{String.valueOf(appUsageRecord.getId())});
