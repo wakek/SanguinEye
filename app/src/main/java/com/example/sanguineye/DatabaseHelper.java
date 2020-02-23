@@ -190,7 +190,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     appUsageRecord.setId(Integer.parseInt(cursor.getString(0)));
                     appUsageRecord.setAppName(cursor.getString(1));
                     appUsageRecord.setTimeSpent(cursor.getString(2));
-                    appUsageRecord.setTimeSpent(cursor.getString(3));
+                    appUsageRecord.setDate(cursor.getString(3));
 
                     appUsageRecordList.add(appUsageRecord);
                 } while (cursor.moveToNext());
@@ -219,7 +219,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     appUsageRecord.setId(Integer.parseInt(cursor.getString(0)));
                     appUsageRecord.setAppName(cursor.getString(1));
                     appUsageRecord.setTimeSpent(cursor.getString(2));
-                    appUsageRecord.setTimeSpent(cursor.getString(3));
+                    appUsageRecord.setDate(cursor.getString(3));
 
                     appUsageRecordList.add(appUsageRecord);
                 } while (cursor.moveToNext());
@@ -273,7 +273,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         ContentValues contentValues = new ContentValues();
         contentValues.put(KEY_APPNAME, appUsageRecord.getAppName());
         contentValues.put(KEY_TIMESPENT, appUsageRecord.getTimeSpent());
-        contentValues.put(KEY_DATE, appUsageRecord.getAppName());
+        contentValues.put(KEY_DATE, appUsageRecord.getDate());
         return db.update(TABLE_APPUSAGE, contentValues,
                 KEY_APPUSAGE_ID + "=?", new String[]{String.valueOf(appUsageRecord.getId())});
     }

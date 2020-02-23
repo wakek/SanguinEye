@@ -2,8 +2,11 @@ package com.example.sanguineye;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
@@ -16,12 +19,20 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
+    Intent notificationServiceIntent;
+    private NotificationService notificationService;
     Timer timer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        notificationService = new NotificationService();
+        notificationServiceIntent = new Intent(this, NotificationService.class);
+        if (!notificationServiceIsRunning(notificationService.getClass())){
+            startService(notificationServiceIntent);
+        }
 
         List<String> quotes = new ArrayList<>();
         quotes.add("\"The opportunity to step away from everything and take a break is something that shouldn\'t be squandered.\" ― Harper Reed");
@@ -39,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
                 Intent timed_intent = new Intent(MainActivity.this, Main2Activity.class);
                 try {
                     startActivity(timed_intent);
+                    finish();
                 } catch (Exception e){
                     e.printStackTrace();
                 }
@@ -46,10 +58,22 @@ public class MainActivity extends AppCompatActivity {
         }, 5000);
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
+    private boolean notificationServiceIsRunning(Class<?> notificationServiceClass){
+        ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo serviceInfo: activityManager.getRunningServices(Integer.MAX_VALUE)){
+            if (notificationServiceClass.getClass().equals(serviceInfo.service.getClassName())){
+                Log.i("Service status", "Running");
+                return true;
+            }
+        }
+        Log.i("Service status", "Not running");
+        return false;
+    }
 
+    @Override
+    protected void onDestroy() {
+        stopService(notificationServiceIntent);
+        super.onDestroy();
     }
 
     @Override

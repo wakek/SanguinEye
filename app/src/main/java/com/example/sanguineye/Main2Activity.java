@@ -4,9 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
-import android.app.ActivityManager;
 import android.app.AppOpsManager;
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.usage.UsageStats;
@@ -16,10 +14,7 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ScaleDrawable;
 import android.os.Build;
@@ -50,7 +45,7 @@ public class Main2Activity extends AppCompatActivity {
 
     public final static String GOOGLE_URL = "https://play.google.com/store/apps/details?id=";
     public static final String ERROR = "error";
-    private static final String TAG = "MainActivity2 Log: ";
+    private static final String TAG = "Main2Activity Log: ";
     private static final String CHANNEL_ID = "usage_notification";
     private static final int NOTIFICATION_ID = 001;
     ListView appListView;
@@ -65,7 +60,7 @@ public class Main2Activity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
-        createNotificationChannel();
+//        createNotificationChannel();
 
         boolean granted = false;
         AppOpsManager appOps = (AppOpsManager) this
@@ -144,6 +139,7 @@ public class Main2Activity extends AppCompatActivity {
             if (appUsageLimit == null){
                 databaseHelper.addAppUsageLimit(new AppUsageLimit(installedApps.get(i).appName, "3600000"));
             }
+            appUsageLimit = databaseHelper.getAppUsageLimitByAppName(installedApps.get(i).appName);
 
             Float appUsageLimitPercentage = null;
             if (appUsageRecord != null) {    // If previous record exists in DB, update
@@ -167,7 +163,7 @@ public class Main2Activity extends AppCompatActivity {
                 databaseHelper.addAppUsage(new AppUsageRecord(installedApps.get(i).appName, appActivityRunningTime_Str, formattedDate));
             }
             pbLayout.addView(progressTextView);
-            displayUsageNotifications(installedApps.get(i).appName, appUsageLimitPercentage);
+//            displayUsageNotifications(installedApps.get(i).appName, appUsageLimitPercentage);
 
             // Adding app icon and app name
             newAppLinearLayout.addView(newAppIcon);
@@ -186,7 +182,6 @@ public class Main2Activity extends AppCompatActivity {
             appslayoutParams.setMargins(24, 40, 24, 0);
             appsLinearLayout.addView(newAppLinearLayout, appslayoutParams);
         }
-
     }
 
     public void goToSetLimitActivity(String appName){
@@ -248,6 +243,14 @@ public class Main2Activity extends AppCompatActivity {
         refreshStats();
     }
 
+    @Override
+    protected void onDestroy() {
+        TextView tempInfo = findViewById(R.id.tempInfo);
+        tempInfo.setVisibility(View.INVISIBLE);
+
+        super.onDestroy();
+    }
+
     private void refreshStats(){
         LinearLayout appsLinearLayout = (LinearLayout)findViewById(R.id.appLinearLayout2);
 
@@ -292,9 +295,10 @@ public class Main2Activity extends AppCompatActivity {
                     // Update records in database
                     try {
                         appUsageRecord.setTimeSpent(appActivityRunningTime_Str);
+//                        appUsageRecord.setDate(formattedDate);
                         databaseHelper.updateAppUsageRecord(appUsageRecord);
-                        createNotificationChannel();
-                        displayUsageNotifications(installedApps.get(j).appName, appUsageLimitPercentage);
+//                        createNotificationChannel();
+//                        displayUsageNotifications(installedApps.get(j).appName, appUsageLimitPercentage);
                     }
                     catch (Exception e){
                         e.printStackTrace();
@@ -339,12 +343,6 @@ public class Main2Activity extends AppCompatActivity {
             }
         }
         return null;
-    }
-
-    class AppInfo {
-        private String appName = "";
-        private String appPkg = "";
-        private Drawable appIcon;
     }
 
     public List<AppInfo> retreiveInstalledApps(){
