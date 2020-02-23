@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
+import android.app.AlertDialog;
 import android.app.AppOpsManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -11,6 +12,7 @@ import android.app.usage.UsageStats;
 import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -75,6 +77,7 @@ public class Main2Activity extends AppCompatActivity {
             granted = (mode == AppOpsManager.MODE_ALLOWED);
         }
 
+
         // Get list of installed apps
         installedApps = retreiveInstalledApps();
 
@@ -124,7 +127,7 @@ public class Main2Activity extends AppCompatActivity {
             AppUsageRecord appUsageRecord = databaseHelper.getAppUsageRecordByAppNameandDate(installedApps.get(i).appName, formattedDate);
 
             // App uptime retrieved
-            Long appActivityRunningTime = getActivityRunningTime(installedApps.get(i).appPkg, formattedDate);
+            Long appActivityRunningTime = getActivityRunningTime(installedApps.get(i).appPkg);
 
             // Convert app uptime to hours
             String appActivityRunningTime_Str = null;
@@ -181,6 +184,23 @@ public class Main2Activity extends AppCompatActivity {
             LinearLayout.LayoutParams appslayoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 200);
             appslayoutParams.setMargins(24, 40, 24, 0);
             appsLinearLayout.addView(newAppLinearLayout, appslayoutParams);
+        }
+        boolean mboolean = false;
+
+        SharedPreferences settings = getSharedPreferences("PREFS_NAME", 0);
+        mboolean = settings.getBoolean("FIRST_RUN", false);
+        if (!mboolean) {
+            // do the thing for the first time
+            AlertDialog alertDialog = new AlertDialog.Builder(Main2Activity.this).create();
+            alertDialog.setTitle("Restart");
+            alertDialog.setMessage("Restart app to load usage data.");
+            alertDialog.show();
+            settings = getSharedPreferences("PREFS_NAME", 0);
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putBoolean("FIRST_RUN", true);
+            editor.commit();
+        } else {
+            // other time your app loads
         }
     }
 
@@ -245,9 +265,6 @@ public class Main2Activity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        TextView tempInfo = findViewById(R.id.tempInfo);
-        tempInfo.setVisibility(View.INVISIBLE);
-
         super.onDestroy();
     }
 
@@ -274,7 +291,7 @@ public class Main2Activity extends AppCompatActivity {
 
                 if (installedApps.get(j).appName.equals(newAppTextView.getText())){
                     // App uptime retrieved
-                    Long appActivityRunningTime = getActivityRunningTime(installedApps.get(j).appPkg, formattedDate);
+                    Long appActivityRunningTime = getActivityRunningTime(installedApps.get(j).appPkg);
 
                     // Convert app uptime to hours
                     String appActivityRunningTime_Str = null;
@@ -310,16 +327,7 @@ public class Main2Activity extends AppCompatActivity {
         }
     }
 
-    private Long getActivityRunningTime(String appPkgName, String startDateTime){
-
-        String year = null;
-        String month = null;
-        String day = null;
-        if (startDateTime != null){
-            year = startDateTime.split("-")[0];
-            month = startDateTime.split("-")[1];
-            day = startDateTime.split("-")[2];
-        }
+    private Long getActivityRunningTime(String appPkgName){
 
         Calendar startDate = new GregorianCalendar();
         startDate.set(Calendar.HOUR_OF_DAY, 0);

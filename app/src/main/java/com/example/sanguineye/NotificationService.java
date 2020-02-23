@@ -1,5 +1,6 @@
 package com.example.sanguineye;
 
+import android.app.AppOpsManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -16,6 +17,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -41,9 +43,9 @@ public class NotificationService extends Service {
     private Timer mTimer = null;    //timer handling
     private static final String TAG = "Service Log: ";
     private static final String CHANNEL_ID = "usage_notification";
-    private static final int NOTIFICATION_ID = 001;
+    private static final int NOTIFICATION_ID = 1;
     // List of installed apps
-    List<AppInfo> installedApps = null;
+    List<AppInfo> installedApps;
     // Retrieve stats from DB
     DatabaseHelper databaseHelper = new DatabaseHelper(this);
 
@@ -52,33 +54,36 @@ public class NotificationService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
-            Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
 
-                @Override
-                public void run() {
-                    startMyOwnForeground();
-                }
-            }, 1000 * 60 * 1);
+        installedApps = retreiveInstalledApps();
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
+            startMyOwnForeground();
         }
         else {
-            Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
-
-                @Override
-                public void run() {
-                    startForeground(1, new Notification());
-                }
-            }, 1000 * 60 * 1);
+            startForeground(1, new Notification());
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
     private void startMyOwnForeground()
     {
-        installedApps = retreiveInstalledApps();
+        String NOTIFICATION_CHANNEL_ID = "com.example.sanguineye";
+        String channelName = "My Background Service";
+        NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_NONE);
+        chan.setLightColor(Color.BLUE);
+        chan.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        assert manager != null;
+        manager.createNotificationChannel(chan);
 
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID);
+        Notification notification = notificationBuilder.setOngoing(true)
+                .setSmallIcon(R.drawable.ic_priority_notification)
+                .setContentTitle("SanguinEye is watching")
+                .setPriority(NotificationManager.IMPORTANCE_MIN)
+                .setCategory(Notification.CATEGORY_SERVICE)
+                .build();
+        startForeground(2, notification);
         // Get current date
         DateFormat dateFormat = new SimpleDateFormat("YYYY-MM-dd", Locale.getDefault());
         Date date = new Date();
@@ -111,15 +116,30 @@ public class NotificationService extends Service {
             Float appUsageLimitPercentage = Float.parseFloat(appActivityRunningTime_Str)/Float.parseFloat(appUsageLimit.getTimeLimit()) * 100;
 
             createNotificationChannel();
+
+            if (appUsageLimitPercentage < 100){
+                return;
+            }
+
+            String contentText = "";
             displayUsageNotifications(installedApps.get(i).appName, appUsageLimitPercentage);
         }
+//        Handler handler = new Handler();
+//        handler.postDelayed(new Runnable() {
+//
+//            @Override
+//            public void run() {
+//
+//            }
+//        }, 1000 * 60 * 5);
+
     }
 
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-//        startTimer();
+        startTimer();
         return START_STICKY;
     }
 
@@ -134,7 +154,6 @@ public class NotificationService extends Service {
         broadcastIntent.setClass(this, Restarter.class);
         this.sendBroadcast(broadcastIntent);
     }
-
 
 
     private Timer timer;
@@ -161,21 +180,23 @@ public class NotificationService extends Service {
             return;
         }
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_priority_notification)
-                .setContentTitle(String.format(Locale.getDefault(), "%s: Usage limit hit", appName))
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-
+        String contentText = "";
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID);
         if (usagePercentage >= 100 && usagePercentage <= 110){
-            builder.setContentText("App usage limit exceeded. Let's take a break.");
+            contentText = "App usage limit exceeded. Let's take a break.";
         }
         else if (usagePercentage > 110) {
-            builder.setContentText("App usage limit exceeded. Geez, take a break, sheesh.");
+            contentText = "App usage limit exceeded. Geez, take a break, sheesh.";
         }
 
         NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
         notificationManagerCompat.notify(NOTIFICATION_ID, builder.build());
-//        startForeground(2, builder.setOngoing(true).build());
+        Notification notification = builder.setOngoing(true)
+                .setContentTitle(String.format(Locale.getDefault(), "%s: Usage limit hit", appName))
+                .setPriority(NotificationManager.IMPORTANCE_HIGH)
+                .setCategory(Notification.CATEGORY_REMINDER)
+                .build();
+        startForeground(3, notification);
 
         System.out.println("notification");
     }
@@ -195,6 +216,7 @@ public class NotificationService extends Service {
             // or other notification behaviors after this
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(channel);
+
         }
     }
 

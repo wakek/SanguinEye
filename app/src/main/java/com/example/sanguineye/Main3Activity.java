@@ -4,8 +4,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -33,6 +35,13 @@ public class Main3Activity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main3);
+        String appName = getIntent().getStringExtra("APP_NAME");
+
+        TextView appNameDisplay = findViewById(R.id.appName);
+        appNameDisplay.setText(appName);
+        appNameDisplay.setGravity(Gravity.CENTER);
+        appNameDisplay.setTextSize(24);
+        appNameDisplay.setTextColor(Color.BLACK);
 
         List<TextView> daysUsage = new ArrayList<TextView>();
         daysUsage.add((TextView) findViewById(R.id.sunUsage));
@@ -55,7 +64,6 @@ public class Main3Activity extends AppCompatActivity {
             Date date = calendarDay.getTime();
             String formattedDate = dateFormat.format(date);
 
-            String appName = getIntent().getStringExtra("APP_NAME");
             // For testing purposes
 //            List<AppUsageRecord> appUsageRecordList = databaseHelper.getAppUsageRecordsByAppName(appName);
 //            AlertDialog alertDialog = new AlertDialog.Builder(Main3Activity.this).create();
@@ -84,7 +92,7 @@ public class Main3Activity extends AppCompatActivity {
 
         EditText editText = (EditText) findViewById(R.id.appUsageLimit);
 
-        if (editText.getText().equals("") || editText.getText() == null){
+        if (editText.getText().toString().equals("") || editText.getText() == null){
             AlertDialog alertDialog = new AlertDialog.Builder(Main3Activity.this).create();
             alertDialog.setTitle("Invalid input");
             alertDialog.setMessage("Provide a new app limit usage in hours");
@@ -103,17 +111,17 @@ public class Main3Activity extends AppCompatActivity {
     }
 
     private String millisecondToAppropriateTime(String time){
-        Long milliseconds = Long.parseLong(time);
-        Long seconds = milliseconds/1000;
+        long milliseconds = Long.parseLong(time);
+        long seconds = milliseconds/1000;
         if (seconds <= 60){
-            return Long.toString(seconds) + "s";
+            return seconds + "s";
         }
-        Long minutes = seconds/60;
+        long minutes = seconds/60;
         if (minutes <= 60){
-            return Long.toString(minutes) + "min";
+            return minutes + "min";
         }
         Long hours = minutes/60;
-        return Long.toString(hours) + "hrs";
+        return hours + "hrs";
     }
 
 }
