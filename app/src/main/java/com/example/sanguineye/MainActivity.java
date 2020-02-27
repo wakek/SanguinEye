@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         quotes.add("\"When things are not happening as planned just stop worrying and take an unplanned break to regain yourself.\"― Giridhar Alwar");
 
         int rand_int = new Random().nextInt(quotes.size());
-        TextView quote_textview = (TextView)findViewById(R.id.quote);
+        TextView quote_textview = findViewById(R.id.quote);
         quote_textview.setText(quotes.get(rand_int));
 
         timer = new Timer();

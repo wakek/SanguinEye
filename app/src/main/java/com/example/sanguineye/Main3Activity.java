@@ -55,11 +55,11 @@ public class Main3Activity extends AppCompatActivity {
         Calendar calendar = Calendar.getInstance();
         int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
 
-        for (int i = dayOfWeek; i <= 7; i++){
+        for (int i = dayOfWeek; i > 0; i--){
             TextView day = daysUsage.get(i - 1);
 
             Calendar calendarDay = Calendar.getInstance();
-            calendarDay.add(Calendar.DAY_OF_WEEK, -(i - 1));
+            calendarDay.add(Calendar.DAY_OF_WEEK, -(calendar.get(Calendar.DAY_OF_WEEK) - i));
             DateFormat dateFormat = new SimpleDateFormat("YYYY-MM-dd", Locale.getDefault());
             Date date = calendarDay.getTime();
             String formattedDate = dateFormat.format(date);
@@ -68,15 +68,15 @@ public class Main3Activity extends AppCompatActivity {
 //            List<AppUsageRecord> appUsageRecordList = databaseHelper.getAppUsageRecordsByAppName(appName);
 //            AlertDialog alertDialog = new AlertDialog.Builder(Main3Activity.this).create();
 //            alertDialog.setTitle("Testing");
-//            alertDialog.setMessage(Integer.toString(appUsageRecordList.size()));
+//            alertDialog.setMessage(appUsageRecordList.get(0).getDate() + ", " + formattedDate);
 //            alertDialog.show();
 
             AppUsageRecord dayUsageRecord = databaseHelper.getAppUsageRecordByAppNameandDate(appName, formattedDate);
             if (dayUsageRecord != null) {
-                daysUsage.get(i - 1).setText(millisecondToAppropriateTime(dayUsageRecord.getTimeSpent()));
+                day.setText(millisecondToAppropriateTime(dayUsageRecord.getTimeSpent()));
             }
             else {
-                daysUsage.get(i - 1).setText("0");
+                day.setText("0");
             }
         }
     }

@@ -115,13 +115,12 @@ public class NotificationService extends Service {
 
             Float appUsageLimitPercentage = Float.parseFloat(appActivityRunningTime_Str)/Float.parseFloat(appUsageLimit.getTimeLimit()) * 100;
 
-            createNotificationChannel();
+//            createNotificationChannel();
 
             if (appUsageLimitPercentage < 100){
                 return;
             }
 
-            String contentText = "";
             displayUsageNotifications(installedApps.get(i).appName, appUsageLimitPercentage);
         }
 //        Handler handler = new Handler();
@@ -181,7 +180,7 @@ public class NotificationService extends Service {
         }
 
         String contentText = "";
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID);
+//        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID);
         if (usagePercentage >= 100 && usagePercentage <= 110){
             contentText = "App usage limit exceeded. Let's take a break.";
         }
@@ -189,10 +188,27 @@ public class NotificationService extends Service {
             contentText = "App usage limit exceeded. Geez, take a break, sheesh.";
         }
 
-        NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
-        notificationManagerCompat.notify(NOTIFICATION_ID, builder.build());
-        Notification notification = builder.setOngoing(true)
-                .setContentTitle(String.format(Locale.getDefault(), "%s: Usage limit hit", appName))
+//        NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(this);
+//        notificationManagerCompat.notify(NOTIFICATION_ID, builder.build());
+//        Notification notification = builder.setOngoing(true)
+//                .setContentTitle(String.format(Locale.getDefault(), "%s: Usage limit hit", appName))
+//                .setPriority(NotificationManager.IMPORTANCE_HIGH)
+//                .setCategory(Notification.CATEGORY_REMINDER)
+//                .build();
+        String NOTIFICATION_CHANNEL_ID = "com.example.sanguineye";
+        String channelName = "My Background Service";
+        NotificationChannel chan = new NotificationChannel(NOTIFICATION_CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_NONE);
+        chan.setLightColor(Color.BLUE);
+        chan.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        assert manager != null;
+        manager.createNotificationChannel(chan);
+
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID);
+        Notification notification = notificationBuilder.setOngoing(true)
+                .setSmallIcon(R.drawable.ic_priority_notification)
+                .setContentTitle("SanguinEye is watching")
+                .setContentText(contentText)
                 .setPriority(NotificationManager.IMPORTANCE_HIGH)
                 .setCategory(Notification.CATEGORY_REMINDER)
                 .build();
